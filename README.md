@@ -1,8 +1,7 @@
 ![RunSnack Logo](images/logo.png)
 
-### Your GPU. One link. The world.
+### Your GPU. One link. The world. [Watch our 30-sec YouTube reel](https://www.youtube.com/watch?v=nP4zvceHLFc)
 
-**[Watch our 30-sec YouTube reel](https://www.youtube.com/watch?v=nP4zvceHLFc)**
 <img src="images/yt.png" alt="RunSnack Logo" width="50%"/>
 
 **Share your GPU with anyone, anywhere — no accounts, no cloud, no listings, no middleman.**
