@@ -2,6 +2,9 @@
 
 ### Your GPU. One link. The world.
 
+![RunSnack Logo](images/yt.png)
+[![Watch our 30-sec reel](https://img.youtube.com/vi/nP4zvceHLFc/maxresdefault.jpg)](https://www.youtube.com/watch?v=nP4zvceHLFc)
+
 **Share your GPU with anyone, anywhere — no accounts, no cloud, no listings, no middleman.**
 
 RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace. Not a rental platform. A direct connection between two people, peer to peer.
