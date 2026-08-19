@@ -108,8 +108,11 @@ Everything past that point — establishing the connection, moving the terminal 
 - **Website:** [runsnack.com](https://runsnack.com)
 - **Docker image:** [hub.docker.com/r/gunzfanatic/runsnack-agent](https://hub.docker.com/r/gunzfanatic/runsnack-agent)
 - **Discord** (find/offer GPU time, support): [discord.gg/jaKt2HANNP](https://discord.gg/jaKt2HANNP)
-- **Author:** [github.com/PacifAIst](https://github.com/PacifAIst)
+- **Author:** Manuel Herrador, PhD [github.com/PacifAIst](https://github.com/PacifAIst)
 
 ## License
 
 The installer scripts in this repository are released under the [Apache License 2.0](./LICENSE). The RunSnack agent binary and its Docker image remain closed-source and are distributed separately via Docker Hub.
+
+<p align="center">Made with ❤️ for the Local AI Community by PacifAIst</p>
+
