@@ -1,6 +1,6 @@
 ![RunSnack Logo](images/logo.png)
 
-### Your GPU. One link. The world. [Watch our 30-sec YouTube reel](https://www.youtube.com/watch?v=nP4zvceHLFc)
+### Your GPU. One link. The world. [Watch our 30-sec YouTube reel:](https://www.youtube.com/watch?v=nP4zvceHLFc)
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=nP4zvceHLFc">
