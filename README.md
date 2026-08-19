@@ -1,4 +1,4 @@
-# RunSnack
+![RunSnack Logo](images/logo.png)
 
 ### Your GPU. One link. The world.
 
