@@ -108,7 +108,7 @@ Everything past that point — establishing the connection, moving the terminal 
 - **Website:** [runsnack.com](https://runsnack.com)
 - **Docker image:** [hub.docker.com/r/gunzfanatic/runsnack-agent](https://hub.docker.com/r/gunzfanatic/runsnack-agent)
 - **Discord** (find/offer GPU time, support): [discord.gg/jaKt2HANNP](https://discord.gg/jaKt2HANNP)
-- **Author:** Manuel Herrador, PhD [github.com/PacifAIst](https://github.com/PacifAIst)
+- **Author:** Manuel Herrador, PhD - [github.com/PacifAIst](https://github.com/PacifAIst)
 
 ## License
 
