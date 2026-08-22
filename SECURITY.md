@@ -86,9 +86,7 @@ isolated from each other, use a separate GPU or a separate machine.
 
 ## Network
 
-- Connections are peer-to-peer over WebRTC, falling back to a TURN relay when a
-  direct path isn't available (typically symmetric NAT or restrictive
-  firewalls).
+- Connections are peer-to-peer over WebRTC.
 - **Guest traffic egresses from your IP address.** Network activity during a
   session appears to originate from your connection, as with any tunnel.
 - **The link is the credential.** Anyone holding it can open a session, and it
