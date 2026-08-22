@@ -10,7 +10,7 @@
 
 **Share your GPU with anyone, anywhere — no accounts, no cloud, no listings, no middleman.**
 
-RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace. Not a rental platform. A direct connection between two people, peer to peer.
+RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace. Not a rental platform. A direct connection between two people, peer to peer. > Security model, threat model, and how to reduce your exposure: [SECURITY.md](SECURITY.md)
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/jaKt2HANNP)
 [![Docker Pulls](https://img.shields.io/docker/pulls/gunzfanatic/runsnack-agent?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gunzfanatic/runsnack-agent)
@@ -102,10 +102,11 @@ Everything past that point — establishing the connection, moving the terminal 
 
 ## Safety notes — read before sharing
 
-- Sessions run inside a **sandboxed Docker container**: read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, non-root user. Whoever you share a link with gets a terminal *inside that container*, not your host machine.
-- Docker is a sandbox, **not a hypervisor**. Don't share with anyone you wouldn't hand a real (if contained) shell to, and don't run this on a machine with sensitive data you're not willing to isolate behind that boundary.
-- RunSnack doesn't run, monitor, or moderate sessions. There's no escrow, no payments, no SLA — if money changes hands, that's between you and the other person.
-- Full details in the [FAQ](https://runsnack.com/#compare) and [Legal & Privacy](https://runsnack.com) notes on the site.
+* Sessions run inside a sandboxed Docker container: read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, non-root user. Whoever you share a link with gets a terminal inside that container, not your host machine.
+* Docker is a sandbox, not a hypervisor. Don't share with anyone you wouldn't hand a real (if contained) shell to, and don't run this on a machine with sensitive data you're not willing to isolate behind that boundary.
+* **The GPU is the weaker boundary.** RunSnack passes the GPU through whole — no MIG, no vGPU, no partitioning. VRAM isn't reliably zeroed between contexts, so data can leak across sessions with no container escape involved. This isn't vendor-specific and it isn't a config we skipped: consumer GPUs have no partitioning to configure.
+* RunSnack doesn't run, monitor, or moderate sessions. There's no escrow, no payments, no SLA — if money changes hands, that's between you and the other person.
+* **Read [SECURITY.md](SECURITY.md) before sharing with anyone.** It's the full threat model: what the boundary does, what it doesn't, and how to reduce your exposure.
 
 ## Links
 
