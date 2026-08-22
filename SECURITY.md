@@ -1,25 +1,21 @@
 # Security
 
-RunSnack gives someone a shell on your machine, inside a container, over a
-link. That is the whole product, and it means the security model deserves a
-straight description rather than a reassuring one.
+RunSnack gives someone a terminal on your machine, inside a container, over a
+link. This document describes how that works, what the boundaries are, and how
+to configure your setup for the level of exposure you're comfortable with.
 
-This document says what the boundary does, what it doesn't, and who this tool
-is for. If any of it is wrong, please tell us — see *Reporting* at the bottom.
+## Design intent
 
-## Who this is for
+RunSnack is built for **direct sharing between people** — a student on the lab
+GPU, a colleague on the build machine, a collaborator reproducing something on
+hardware they don't own, a client testing before they buy.
 
-**Share the way you would share an SSH key.** RunSnack is built for handing
-your hardware to a specific person you already have a reason to trust: a
-student, a colleague, a collaborator, a maintainer you have been talking to in
-an issue thread.
+That design is why there's no account system, no listing, and no platform in
+the middle: the trust relationship already exists between the two people, so
+the software doesn't need to manufacture one. Sharing works best the same way
+sharing an SSH key does — with people you have a reason to trust.
 
-It is **not** built for renting to anonymous strangers. There is no escrow, no
-reputation system, no dispute process, and — as described below — no hardware
-isolation on the GPU. Platforms like Vast.ai and RunPod exist because those
-problems are hard, and they have solved them. RunSnack has not, by design.
-
-## What the container boundary does
+## The container boundary
 
 Sessions run in a Docker container launched with:
 
@@ -27,112 +23,94 @@ Sessions run in a Docker container launched with:
 - `--cap-drop=ALL` — no Linux capabilities
 - `--security-opt=no-new-privileges`
 - Non-root user (uid 1000)
-- `--cpus` and `--memory` limits set at install time
-- `tmpfs` mounts with `nosuid`, size-capped, wiped when the container stops
+- `--cpus` and `--memory` limits set during install
+- `tmpfs` mounts with `nosuid`, size-capped, discarded when the container stops
 
-Docker's default seccomp profile applies. A guest lands in an unprivileged
-process, in a namespace of its own, with no capabilities and no writable root.
+Docker's default seccomp profile applies. A guest lands as an unprivileged user
+in its own namespace, with no capabilities and no writable root filesystem.
 
-That is a real boundary, and it is the same one you rely on every time you run
-somebody else's container image.
+This is the same isolation model you rely on whenever you run a container image
+you didn't build yourself.
 
-## What the container boundary does not do
+**What it doesn't cover:** containers share the host kernel, so container
+isolation is not equivalent to a virtual machine. If your situation calls for
+VM-grade separation, run RunSnack inside a VM — that composes fine, and gives
+you both boundaries.
 
-**Docker is a sandbox, not a hypervisor.** The container shares the host
-kernel. A kernel vulnerability, or a misconfiguration that grants back a
-capability, turns container access into host access. Platforms that hand you a
-full VM with its own kernel give a strictly stronger boundary than this.
+## GPU characteristics
 
-If you need VM-grade isolation, use a VM. gVisor and Kata Containers are the
-usual middle ground; RunSnack does not currently use either.
+RunSnack passes the GPU through directly (`--gpus`). Worth understanding what
+that means, because it's a property of GPU computing generally rather than of
+RunSnack specifically:
 
-## The GPU is the weaker boundary
+- **GPU memory isn't partitioned on consumer hardware.** MIG and vGPU exist
+  only on datacenter parts (A100, H100, some AMD Instinct cards). On a 4090, a
+  Jetson, or an integrated GPU there's no partitioning layer available to any
+  software.
+- **VRAM isn't reliably zeroed between contexts.** Memory freed by one workload
+  may still hold its contents when the next allocation receives it, so data can
+  be readable across sessions.
+- **Isolation on the GPU is driver-enforced.** The driver maintains separate
+  virtual address spaces per context, but that's software separation rather
+  than the hardware separation SR-IOV provides on other devices.
 
-This is the part most people underestimate, including us until reviewers on
-LowEndTalk pushed on it.
+**Practical guidance:** treat a shared GPU as shared. If a workload involves
+data you wouldn't want a later session to see, run it on a GPU you're not
+sharing.
 
-RunSnack passes the GPU through whole (`--gpus all`). There is **no MIG, no
-vGPU, and no SR-IOV partitioning.** Consequences:
+## Network
 
-- **VRAM is not reliably zeroed between contexts.** Memory freed by one
-  workload can be handed to the next one with the previous contents still in
-  it. Data can leak across sessions **with no container escape involved at
-  all.**
-- **Isolation on the GPU is software-enforced, not hardware-enforced.** The
-  driver sets up separate virtual address spaces per context, but a driver bug
-  or a scheduler-level exploit can cross that line. There is no equivalent of
-  SR-IOV's IOMMU-level separation.
-- **The GPU driver is not a privilege boundary.** It runs in kernel space with
-  a large attack surface, and the hardware-to-driver interface has never been
-  treated as a security boundary. Malformed command buffers, firmware bugs, and
-  timing side channels on shared execution units are unaffected by anything
-  above.
+- Connections are peer-to-peer over WebRTC, falling back to a TURN relay when a
+  direct path isn't available (typically symmetric NAT or restrictive
+  firewalls).
+- **Guest traffic egresses from your IP address.** Network activity during a
+  session appears to originate from your connection, as with any tunnel.
+- **The link is the credential.** Anyone holding it can open a session, and it
+  doesn't expire on its own. Regenerate it from `snackctl` to invalidate the
+  previous one.
 
-This is **not specific to NVIDIA**, and it is not something we have chosen not
-to fix. No consumer GPU has native isolation between kernels. MIG and vGPU
-exist only on datacenter parts; AMD's SR-IOV support is limited to some
-Instinct cards. On a 4090, a Jetson, or an integrated GPU there is nothing to
-partition with.
+## Scope
 
-**Practical implication:** do not run anything on a shared GPU that you would
-mind a later session reading. If your workload involves data you cannot afford
-to leak, RunSnack is the wrong tool.
+Things RunSnack intentionally doesn't include, so there's no ambiguity:
 
-## Network exposure
-
-- The connection is peer-to-peer over WebRTC. When direct connection fails
-  (symmetric NAT, restrictive firewalls) it falls back to a TURN relay.
-- **Guest traffic leaves from your IP address.** Anything the guest does on the
-  network — downloads, scraping, abuse — appears to originate from your
-  connection, and is your responsibility as the connection owner.
-- Anyone holding the link can open a session. Treat it as a credential: it is
-  not password-protected, and it does not expire on its own. Regenerate it from
-  `snackctl` to invalidate the old one.
-
-## What we don't have
-
-Stated plainly so nobody has to discover it later:
-
-- No escrow, payment handling, or dispute process
-- No reputation or identity system
-- No SLA, uptime guarantee, or support commitment
-- No audit by a third party
-- No isolation between concurrent workloads on the same GPU
-- No process-count limit on the container (a fork bomb can exhaust the host's
-  process table and require a reboot)
+- Escrow, payment handling, or dispute resolution — any arrangement is directly
+  between the two people involved
+- Reputation or identity systems
+- Uptime or availability guarantees
+- Third-party security audit
+- Isolation between concurrent workloads on the same GPU
+- A process-count limit on the container
 
 ## Open and closed components
 
-- **Open (Apache 2.0):** the installer scripts in this repository. These are
-  byte-for-byte what runsnack.com serves. They are the part that touches your
-  host, and every flag above is visible in them — read them before running
-  anything.
-- **Closed:** the agent that runs inside the container, distributed as a
-  Docker image. You are trusting it. If that is a dealbreaker for you, it is a
-  reasonable position and we would rather say so than argue about it.
+- **Open (Apache 2.0):** the installer scripts in this repository, byte-for-byte
+  identical to what runsnack.com serves. These are the components that run on
+  your host, and every flag documented above is visible in them.
+- **Closed:** the agent running inside the container, distributed as a Docker
+  image.
 
-## Reducing your exposure
+## Hardening your setup
 
-If you want to use RunSnack with the boundary widened as far as it goes:
+For hosts who want to tighten things further:
 
-- Run it on a machine that does not hold data you care about — a spare box, a
-  lab machine, a reinstall away from useful.
-- Put it on an isolated VLAN, or behind an egress firewall that limits what a
-  session can reach.
-- Use the schedule option at install time so it only accepts connections during
+- Run it on a machine that isn't holding data you care about — a spare box or a
+  lab machine is ideal.
+- Put the host on an isolated VLAN, or behind an egress firewall limiting what
+  a session can reach.
+- Use the schedule option during install so sessions are only possible during
   hours you choose.
-- Stop the container when you are not actively sharing: `docker stop snack1`.
+- Stop the container when you're not actively sharing: `docker stop snack1`.
 - Regenerate the link after each session rather than reusing it.
+- Run RunSnack inside a VM if you want a kernel boundary as well as a container
+  one.
 
-## Reporting a vulnerability
+## Reporting
 
 Open an issue at https://github.com/PacifAIst/runsnack/issues for anything
 non-sensitive.
 
-For something that should not be public first, contact Manuel Herrador through
-https://github.com/PacifAIst and we will arrange a private channel. There is no
-bug bounty. We will credit you unless you would rather we didn't.
+For something that shouldn't be public initially, contact Manuel Herrador via
+https://github.com/PacifAIst and we'll arrange a private channel. There's no
+bug bounty; we'll credit you unless you'd prefer we didn't.
 
-Corrections to this document are as welcome as vulnerability reports. Several
-of the limits above were written because people took the time to point them
-out.
+Corrections to this document are as welcome as vulnerability reports.
