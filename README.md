@@ -10,7 +10,9 @@
 
 **Share your GPU with anyone, anywhere — no accounts, no cloud, no listings, no middleman.**
 
-RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace. Not a rental platform. A direct connection between two people, peer to peer. > Security model, threat model, and how to reduce your exposure: [SECURITY.md](SECURITY.md)
+RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace, not a rental platform — a direct connection between two people, peer to peer.
+
+📄 [Security model and threat model](https://github.com/PacifAIst/runsnack/blob/main/SECURITY.md) — how the boundaries work and how to configure your setup.
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/jaKt2HANNP)
 [![Docker Pulls](https://img.shields.io/docker/pulls/gunzfanatic/runsnack-agent?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gunzfanatic/runsnack-agent)
