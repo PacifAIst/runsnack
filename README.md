@@ -12,7 +12,7 @@
 
 RunSnack turns any machine with Docker into a one-link terminal you can hand to a specific person, right now. Not a marketplace, not a rental platform — a direct connection between two people, peer to peer.
 
-📄 [Security model and threat model](https://github.com/PacifAIst/runsnack/blob/main/SECURITY.md) — how the boundaries work and how to configure your setup (it is recommended to switch-off your machine 10 secs between sesssion to avoid GPU memory leaks).
+📄 [Security model and threat model](SECURITY.md) — how the boundaries work and how to configure your setup. Quick tip: power off for ~10 seconds between sessions with different people, so the GPU's memory is cleared.
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/jaKt2HANNP)
 [![Docker Pulls](https://img.shields.io/docker/pulls/gunzfanatic/runsnack-agent?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gunzfanatic/runsnack-agent)
