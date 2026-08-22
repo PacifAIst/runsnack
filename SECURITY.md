@@ -49,9 +49,23 @@ partitioning layer available to any software.
 
 ### Recommended practice: reset the GPU between sessions
 
-Power-cycling or resetting the GPU clears its memory. Two ways to do it:
+Power-cycling the GPU clears its memory. The simplest way, and the one that
+works everywhere:
 
-**Fast (seconds), Linux, root required:**
+**Shut down the machine, wait about 10 seconds, and start it again.** A full
+shutdown cuts power to the GPU, which clears VRAM completely. No commands, no
+privileges, same on Windows, Linux and macOS. Sleep or a warm restart isn't
+enough — the machine needs to actually power off.
+
+So RunSnack comes back on its own afterwards, set it to restart automatically
+once:
+
+```bash
+docker update --restart unless-stopped snack1
+```
+
+**Faster option (Linux, root):** if you'd rather not reboot, a device-level
+reset does the same thing in a few seconds:
 
 ```bash
 docker stop snack1
@@ -59,25 +73,12 @@ sudo nvidia-smi --gpu-reset -i 0     # -i is the GPU index
 docker start snack1
 ```
 
-`--gpu-reset` performs a device-level reset that reinitialises the GPU and
-clears its memory. It requires that no processes are using the GPU, which is
-why the container is stopped first.
+This requires that no processes are using the GPU, which is why the container
+stops first. It isn't available on every consumer card.
 
-**Strongest: restart the host between sessions.** A full shutdown power-cycles
-the GPU, which clears VRAM unconditionally. Slower, but it needs no special
-privileges and works identically on Windows, Linux and macOS.
-
-If you reboot, make sure RunSnack comes back automatically or sharing will stop
-silently. Add a restart policy to the container:
-
-```bash
-docker update --restart unless-stopped snack1
-```
-
-**When this matters:** if you're sharing with the same person repeatedly, or
-sharing your own machine with a colleague, resetting between sessions is
-optional. If you're handing the machine to different people in sequence, reset
-between them.
+**When to bother:** sharing with the same person repeatedly, or with a
+colleague on your own machine? Not needed. Handing the machine to different
+people one after another? Reset in between.
 
 **What a reset doesn't cover:** concurrent sessions sharing the same GPU, and
 your own workloads running alongside a guest session. If you need those
