@@ -39,8 +39,10 @@ RunSnack gets **someone specific** onto **your** hardware, **right now**:
 - A maintainer who needs to reproduce a bug on your Jetson.
 - A collaborator who needs the robot in the next building.
 - A friend who needs a CUDA box and you happen to have a spare one idling.
+- You're simply too thrifty :) and want to save by renting at a lower cost than mainstream cloud providers.
+- You want to earn extra money by renting out your unused machines that were just gathering dust.
 
-No account for them to create. No listing to publish. No marketplace to wait for. Just a link — because the machine is already yours, and the person is already someone you know.
+No account for them to create. No listing to publish. No marketplace to wait for. 
 
 ## How it works
 
@@ -48,7 +50,7 @@ No account for them to create. No listing to publish. No marketplace to wait for
 2. **Answer three questions**: CPU cores, RAM, an optional access schedule.
 3. **Get a link.** Send it to whoever you're sharing with. They paste it in a browser and get a real terminal, inside a sandboxed Docker container, on your machine — nothing installed on their end.
 
-That's the whole flow. First run pulls a ~4 GB image (a few minutes); every session after that starts in seconds.
+That's the whole flow. First run pulls a ~1.9 GB image (a few minutes); every session after that starts in seconds.
 
 ```bash
 # Linux / macOS
