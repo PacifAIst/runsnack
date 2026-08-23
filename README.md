@@ -50,7 +50,7 @@ No account for them to create. No listing to publish. No marketplace to wait for
 2. **Answer three questions**: CPU cores, RAM, an optional access schedule.
 3. **Get a link.** Send it to whoever you're sharing with. They paste it in a browser and get a real terminal, inside a sandboxed Docker container, on your machine — nothing installed on their end.
 
-That's the whole flow. First run pulls a ~1.9 GB image (a few minutes); every session after that starts in seconds.
+That's the whole flow. First run pulls a ~1.4 GB image (a few minutes); every session after that starts in seconds.
 
 ```bash
 # Linux / macOS
