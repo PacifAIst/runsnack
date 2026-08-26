@@ -75,6 +75,8 @@ The scripts themselves are deliberately thin. What they do, in full:
 
 Everything past that point — establishing the connection, moving the terminal session across it, keeping it alive, tearing it down cleanly — happens inside the container image, which is **closed source and not part of this repository**. That's a deliberate line: the scripts that touch your shell with elevated intent are fully readable here; the engineering that makes the connection itself work isn't published.
 
+**Hardware detection:** `snackup.sh` checks the host architecture and picks the right image automatically — the regular x86_64 image, or a separate NVIDIA Jetson build (JetPack 6.1 only, detected via the standard `/etc/nv_tegra_release` marker) — or exits with a clear message on anything else, rather than silently pulling an image that won't work. This is intentional: Docker's own multi-arch resolution can't tell a Jetson apart from any other ARM64 machine, so the detection lives here instead.
+
 ## What makes RunSnack different
 
 - **Zero network required.** Works the moment you install it, with a network of exactly one — you and whoever you send the link to.
@@ -82,7 +84,7 @@ Everything past that point — establishing the connection, moving the terminal 
 - **Nobody takes a cut.** RunSnack charges no fees. If money changes hands, that's a private arrangement between you and the other person.
 - **Seconds to first shell**, not minutes of billing setup.
 - **Your hardware, your custody.** The host's machine is never handed to a platform — it stays exactly where it is, sandboxed behind a read-only, capability-dropped, non-root Docker container.
-- **Runs on anything with Docker** — a Jetson Nano, an old gaming rig, a datacenter card, even CPU-only. Not limited to whatever a marketplace happens to stock.
+- **Runs on anything with Docker** — an NVIDIA Jetson (JetPack 6.1), an old gaming rig, a datacenter card, even CPU-only. Not limited to whatever a marketplace happens to stock.
 - **No crypto, no wallet, no token.**
 
 ## RunSnack vs. distributed GPU marketplaces
@@ -97,7 +99,7 @@ Everything past that point — establishing the connection, moving the terminal 
 | **Time to first shell** | ✅ Seconds — one script | ❌ Minutes + billing setup | ⚠️ Minutes | ⚠️ Minutes | ❌ Minutes + wallet | ⚠️ Minutes |
 | **Access method** | ✅ Browser terminal, link only | SSH / API / Jupyter | Container job submission | SSH / API | Container deployment | Remote access to their boxes |
 | **Who holds custody** | ✅ Nobody — host keeps their machine | Platform brokers | Platform orchestrates | Platform brokers | Protocol | Provider |
-| **Edge & SBC devices (Jetson, Pi)** | ✅ Yes — whatever the host owns | ⚠️ Rare / none | ❌ No | ❌ No | ❌ No | ⚠️ Yes — Orin & Thor only |
+| **Edge & SBC devices (Jetson, Pi)** | ✅ Yes — Jetson (JetPack 6.1) | ⚠️ Rare / none | ❌ No | ❌ No | ❌ No | ⚠️ Yes — Orin & Thor only |
 | **Hardware breadth** | ✅ Anything that runs Docker | Consumer + datacenter | Consumer GPUs at scale | Consumer + datacenter | Datacenter-leaning | Jetson only |
 | **Crypto / token required** | ✅ No | No | No | No | ❌ Yes | No |
 | **Reputation system** | Community channel (Discord) | Built-in | Built-in | Built-in | On-chain | N/A |

@@ -39,6 +39,19 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Architecture check, for symmetry with snackup.sh's Jetson dispatch (see
+# scripts/snackup.sh and agent/arm64/README.md) -- NVIDIA Jetson devices run
+# Linux, not Windows, so there is no Jetson image to pick here. This only
+# catches the one real edge case on Windows: Windows on ARM (e.g. Surface
+# Pro X), which would otherwise silently try to pull the x64-only image.
+$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+if ($arch -ne "X64") {
+    Write-Host "Unsupported architecture: $arch."
+    Write-Host "RunSnack's Windows installer currently supports x64 only."
+    Write-Host "(NVIDIA Jetson devices run Linux, not Windows -- use snackup.sh there instead.)"
+    exit 1
+}
+
 $dockerInfoText = docker info 2>&1 | Out-String
 $gpuFlag = "all"
 if ($dockerInfoText -notmatch "(?i)nvidia") {

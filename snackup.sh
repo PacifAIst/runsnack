@@ -4,7 +4,6 @@
 # manages it) — this script only needs Docker on the host, nothing else.
 set -euo pipefail
 
-IMAGE="gunzfanatic/runsnack-agent:latest"
 CONTAINER="snack1"
 
 echo "RunSnack setup"
@@ -25,10 +24,56 @@ if ! docker info &>/dev/null; then
   exit 1
 fi
 
+# Detect the host and pick the right published image -- rather than relying
+# on Docker's multi-arch manifest auto-resolution, which can only tell
+# linux/amd64 from linux/arm64 and can't distinguish a Jetson from any other
+# arm64 machine (Raspberry Pi, Apple Silicon, a generic ARM server). This
+# way an unsupported host gets a clear message instead of a silently broken
+# or GPU-less image. /etc/nv_tegra_release exists on every L4T-flashed
+# Jetson and nowhere else -- the standard way Jetson tooling detects itself.
+ARCH=$(uname -m)
+IS_JETSON=0
+case "$ARCH" in
+  x86_64)
+    IMAGE="gunzfanatic/runsnack-agent:latest"
+    ;;
+  aarch64|arm64)
+    if [ -f /etc/nv_tegra_release ]; then
+      IS_JETSON=1
+      IMAGE="gunzfanatic/runsnack-agent:jetson-jp6"
+    else
+      echo "This machine is ARM64 but not a detected NVIDIA Jetson (JetPack 6.1 / L4T r36.4)."
+      echo "RunSnack currently supports x86_64 and Jetson (JetPack 6.1) only."
+      echo "See https://github.com/PacifAIst/runsnack for the current hardware list."
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH."
+    echo "RunSnack currently supports x86_64 and NVIDIA Jetson (JetPack 6.1, arm64) only."
+    exit 1
+    ;;
+esac
+
 GPU_FLAG="all"
 if ! docker info 2>/dev/null | grep -qi nvidia; then
   echo "Note: no NVIDIA Docker runtime detected. Continuing without GPU passthrough"
   echo "(CPU-only). See the README if you expected GPU support to be available."
+  GPU_FLAG=""
+fi
+
+# Jetson's container runtime rejects/ignores --gpus entirely; GPU access
+# there goes through --runtime nvidia (csv-mode host-library mounts)
+# instead. Gated on GPU_FLAG (not just IS_JETSON) so a freshly-flashed
+# Jetson that hasn't configured the NVIDIA container toolkit yet still
+# degrades to CPU-only, the same as every other undetected-GPU host, rather
+# than hard-failing with "unknown or invalid runtime name". See
+# agent/arm64/README.md for why this differs from x86.
+RUNTIME_ARGS=()
+if [ "$IS_JETSON" = "1" ]; then
+  if [ -n "$GPU_FLAG" ]; then
+    RUNTIME_ARGS=(--runtime nvidia)
+  fi
   GPU_FLAG=""
 fi
 
@@ -52,8 +97,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$REPO_ROOT/docker"
 AGENT_DIR="$REPO_ROOT/agent"
+ARM64_DIR="$REPO_ROOT/agent/arm64"
 
-if [ -f "$DOCKER_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
+if [ "$IS_JETSON" = "1" ] && [ -f "$ARM64_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
+  echo
+  echo "Found source checkout next to this script -- building the Jetson image"
+  echo "locally instead of pulling from Docker Hub (no account needed for this)."
+  echo "This requires Docker buildx with arm64 QEMU emulation registered --"
+  echo "see agent/arm64/README.md if the build step below fails."
+
+  echo "Building Docker image $IMAGE (linux/arm64, agent/arm64/Dockerfile) ..."
+  (cd "$REPO_ROOT" && docker buildx build --platform linux/arm64 \
+    -f "$ARM64_DIR/Dockerfile" -t "$IMAGE" --load .)
+elif [ -f "$DOCKER_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
   echo
   echo "Found source checkout next to this script -- building the image locally"
   echo "instead of pulling from Docker Hub (no account needed for this)."
@@ -104,6 +160,7 @@ fi
 
 docker run -d --name "$CONTAINER" \
   "${GPU_ARGS[@]}" \
+  "${RUNTIME_ARGS[@]}" \
   --cpus="$CPU" --memory="${RAM}g" \
   --read-only \
   --tmpfs /tmp:rw,nosuid,size=2g \
