@@ -24,33 +24,53 @@ if ! docker info &>/dev/null; then
   exit 1
 fi
 
+# DGX Spark (Grace Blackwell) detection -- no single official marker file
+# like Jetson's /etc/nv_tegra_release, so this layers three DGX-Spark-
+# specific signals, any one of which is sufficient: the DGX OS release file,
+# the DMI/SMBIOS product name (Grace exposes real DMI data, unlike Jetson),
+# and nvidia-smi's reported GPU name. All three are specific to DGX Spark /
+# GB10 hardware -- none would match a Raspberry Pi, Apple Silicon, a plain
+# ARM cloud server, or a Jetson. See agent/dgx-spark/README.md.
+is_dgx_spark() {
+  grep -q 'DGX_NAME="DGX Spark"' /etc/dgx-release 2>/dev/null && return 0
+  grep -qi 'NVIDIA_DGX_Spark' /sys/class/dmi/id/product_name 2>/dev/null && return 0
+  command -v nvidia-smi >/dev/null 2>&1 && \
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | grep -qi 'GB10' && return 0
+  return 1
+}
+
 # Detect the host and pick the right published image -- rather than relying
 # on Docker's multi-arch manifest auto-resolution, which can only tell
-# linux/amd64 from linux/arm64 and can't distinguish a Jetson from any other
-# arm64 machine (Raspberry Pi, Apple Silicon, a generic ARM server). This
-# way an unsupported host gets a clear message instead of a silently broken
-# or GPU-less image. /etc/nv_tegra_release exists on every L4T-flashed
-# Jetson and nowhere else -- the standard way Jetson tooling detects itself.
+# linux/amd64 from linux/arm64 and can't distinguish a Jetson or DGX Spark
+# from any other arm64 machine (Raspberry Pi, Apple Silicon, a generic ARM
+# server). This way an unsupported host gets a clear message instead of a
+# silently broken or GPU-less image. /etc/nv_tegra_release exists on every
+# L4T-flashed Jetson and nowhere else -- the standard way Jetson tooling
+# detects itself.
 ARCH=$(uname -m)
 IS_JETSON=0
+IS_DGX_SPARK=0
 case "$ARCH" in
   x86_64)
     IMAGE="gunzfanatic/runsnack-agent:latest"
     ;;
   aarch64|arm64)
-    if [ -f /etc/nv_tegra_release ]; then
+    if is_dgx_spark; then
+      IS_DGX_SPARK=1
+      IMAGE="gunzfanatic/runsnack-agent:dgx-spark"
+    elif [ -f /etc/nv_tegra_release ]; then
       IS_JETSON=1
       IMAGE="gunzfanatic/runsnack-agent:jetson-jp6"
     else
-      echo "This machine is ARM64 but not a detected NVIDIA Jetson (JetPack 6.1 / L4T r36.4)."
-      echo "RunSnack currently supports x86_64 and Jetson (JetPack 6.1) only."
+      echo "This machine is ARM64 but not a detected NVIDIA Jetson (JetPack 6.1 / L4T r36.4) or DGX Spark."
+      echo "RunSnack currently supports x86_64, Jetson (JetPack 6.1), and DGX Spark only."
       echo "See https://github.com/PacifAIst/runsnack for the current hardware list."
       exit 1
     fi
     ;;
   *)
     echo "Unsupported architecture: $ARCH."
-    echo "RunSnack currently supports x86_64 and NVIDIA Jetson (JetPack 6.1, arm64) only."
+    echo "RunSnack currently supports x86_64, NVIDIA Jetson (JetPack 6.1, arm64), and DGX Spark (arm64) only."
     exit 1
     ;;
 esac
@@ -98,6 +118,7 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$REPO_ROOT/docker"
 AGENT_DIR="$REPO_ROOT/agent"
 ARM64_DIR="$REPO_ROOT/agent/arm64"
+DGX_SPARK_DIR="$REPO_ROOT/agent/dgx-spark"
 
 if [ "$IS_JETSON" = "1" ] && [ -f "$ARM64_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
   echo
@@ -109,6 +130,16 @@ if [ "$IS_JETSON" = "1" ] && [ -f "$ARM64_DIR/Dockerfile" ] && [ -d "$AGENT_DIR"
   echo "Building Docker image $IMAGE (linux/arm64, agent/arm64/Dockerfile) ..."
   (cd "$REPO_ROOT" && docker buildx build --platform linux/arm64 \
     -f "$ARM64_DIR/Dockerfile" -t "$IMAGE" --load .)
+elif [ "$IS_DGX_SPARK" = "1" ] && [ -f "$DGX_SPARK_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
+  echo
+  echo "Found source checkout next to this script -- building the DGX Spark"
+  echo "image locally instead of pulling from Docker Hub (no account needed"
+  echo "for this). This requires Docker buildx with arm64 QEMU emulation"
+  echo "registered -- see agent/dgx-spark/README.md if the build step below fails."
+
+  echo "Building Docker image $IMAGE (linux/arm64, agent/dgx-spark/Dockerfile) ..."
+  (cd "$REPO_ROOT" && docker buildx build --platform linux/arm64 \
+    -f "$DGX_SPARK_DIR/Dockerfile" -t "$IMAGE" --load .)
 elif [ -f "$DOCKER_DIR/Dockerfile" ] && [ -d "$AGENT_DIR" ]; then
   echo
   echo "Found source checkout next to this script -- building the image locally"
